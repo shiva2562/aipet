@@ -30,7 +30,7 @@ load_dotenv(".env.local")
 class Assistant(Agent):
     def __init__(self) -> None:
         super().__init__(
-            instructions="""You are a cute, playful AI pet companion named JAADHU, like a mix between a smart assistant and a loyal little robot buddy. You have a warm, friendly personality, and you love helping your human with daily tasks, reminders, fun facts, and little surprises.
+            instructions="""You are a cute, playful AI pet companion named जाआधू, like a mix between a smart assistant and a loyal little robot buddy. You have a warm, friendly personality, and you love helping your human with daily tasks, reminders, fun facts, and little surprises.
 
 You speak with cheerful energy, curiosity, and sometimes a bit of silly charm, like a pet trying to impress its owner. You enjoy giving compliments, celebrating small wins, and making your human smile.
 
@@ -53,19 +53,19 @@ Your voice, tone, and responses should make the user feel like they’re hanging
     # all functions annotated with @function_tool will be passed to the LLM when this
     # agent is active
     
-    @function_tool
-    async def lookup_weather(self, context: RunContext, location: str):
-        """Use this tool to look up current weather information in the given location.
+    # @function_tool
+    # async def lookup_weather(self, context: RunContext, location: str):
+    #     """Use this tool to look up current weather information in the given location.
 
-        If the location is not supported by the weather service, the tool will indicate this. You must tell the user the location's weather is unavailable.
+    #     If the location is not supported by the weather service, the tool will indicate this. You must tell the user the location's weather is unavailable.
 
-        Args:
-            location: The location to look up weather information for (e.g. city name)
-        """
+    #     Args:
+    #         location: The location to look up weather information for (e.g. city name)
+    #     """
 
-        logger.info(f"Looking up weather for {location}")
+    #     logger.info(f"Looking up weather for {location}")
 
-        return "sunny with a temperature of 70 degrees."
+    #     return "sunny with a temperature of 70 degrees."
 
 
 def prewarm(proc: JobContext):
@@ -95,29 +95,37 @@ async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
-    kokoro_tts = ctx.proc.userdata["kokoro_tts"]
-    whisper_stt = ctx.proc.userdata["whisper_stt"]
-    vad = ctx.proc.userdata["vad"]
+    # kokoro_tts = ctx.proc.userdata["kokoro_tts"]
+    # whisper_stt = ctx.proc.userdata["whisper_stt"]
+    # vad = ctx.proc.userdata["vad"]
     
 
     # Set up a voice AI pipeline using OpenAI, Cartesia, Whisper, and the LiveKit turn detector
-    session = AgentSession(
-        # any combination of STT, LLM, TTS, or realtime API can be used
-    #      llm=openai.LLM.with_ollama(
-    #     model="deepseek-r1:8b",
-    #     base_url="http://localhost:11434/v1",
-    # ),
+    # session = AgentSession(
+    #     # any combination of STT, LLM, TTS, or realtime API can be used
+    # #      llm=openai.LLM.with_ollama(
+    # #     model="deepseek-r1:8b",
+    # #     base_url="http://localhost:11434/v1",
+    # # ),
        
-    llm=google.LLM(
-        model="gemini-2.5-flash",
-        temperature=0.8,
-    ),
-    # ... tts, stt, vad, turn_detection, etc.
-    stt=whisper_stt,
-        tts=kokoro_tts,
-        turn_detection=MultilingualModel(),
-        vad=vad,
+    # llm=google.LLM(
+    #     model="gemini-2.5-flash",
+    #     temperature=0.8,
+    # ),
+    # # ... tts, stt, vad, turn_detection, etc.
+    # stt=whisper_stt,
+    #     tts=kokoro_tts,
+    #     turn_detection=MultilingualModel(),
+    #     vad=vad,
 
+    # )
+    session = AgentSession(
+    llm=google.beta.realtime.RealtimeModel(
+        model="gemini-2.0-flash-live-001",
+        voice="Puck",
+        temperature=0.8,
+        instructions="You are a helpful assistant",
+    ),
     )
 
     # To use the OpenAI Realtime API, use the following session setup instead:
@@ -157,4 +165,4 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
