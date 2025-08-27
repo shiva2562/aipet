@@ -21,6 +21,9 @@ from livekit.plugins import cartesia, noise_cancellation, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.plugins import google
 from kokoro_tts import create_kokoro_tts
+from google.genai import types
+from langchain_community.tools import DuckDuckGoSearchRun
+
 
 logger = logging.getLogger("agent")
 
@@ -53,8 +56,8 @@ Your voice, tone, and responses should make the user feel like they’re hanging
     # all functions annotated with @function_tool will be passed to the LLM when this
     # agent is active
     
-    @function_tool
-    async def lookup_weather(self, context: RunContext, location: str):
+@function_tool()
+async def lookup_weather(self, context: RunContext, location: str):
         """Use this tool to look up current weather information in the given location.
 
         If the location is not supported by the weather service, the tool will indicate this. You must tell the user the location's weather is unavailable.
@@ -66,6 +69,20 @@ Your voice, tone, and responses should make the user feel like they’re hanging
         logger.info(f"Looking up weather for {location}")
 
         return "sunny with a temperature of 70 degrees."
+@function_tool()
+async def search_web(
+    context: RunContext,  # type: ignore
+    query: str) -> str:
+    """
+    Search the web using DuckDuckGo.
+    """
+    try:
+        results = DuckDuckGoSearchRun().run(tool_input=query)
+        logging.info(f"Search results for '{query}': {results}")
+        return results
+    except Exception as e:
+        logging.error(f"Error searching the web for '{query}': {e}")
+        return f"An error occurred while searching the web for '{query}'."  
 
 
 def prewarm(proc: JobContext):
@@ -109,8 +126,9 @@ async def entrypoint(ctx: JobContext):
     # ),
        
     llm=google.LLM(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash-lite",
         temperature=0.8,
+        gemini_tools=[types.GoogleSearch()],
     ),
     # ... tts, stt, vad, turn_detection, etc.
     stt=whisper_stt,
